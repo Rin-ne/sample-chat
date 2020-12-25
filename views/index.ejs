@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        .header {
+            display: flex;
+            position: fixed;
+            top:0;
+            left: 0;
+            right: 0;
+            flex-grow: 1;
+            background-color: #eee;
+            box-shadow: 0px 0.1px 1px 0px;
+        }
+
+        .header>h1 {
+            font-weight: lighter;
+            margin: 10px;
+            margin-left: 20px
+        }
+
+        .main {
+            display: flex;
+            flex-grow: 3;
+            padding: 20px;
+            margin-bottom: 50px;
+            overflow-y:visible;
+            flex-direction: column;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            display: flex;
+            left: 0;
+            height: 50px;
+            background-color: #eee;
+        }
+
+        .parent {
+            display: flex;
+            flex-direction: column;
+            width: auto;
+            height: auto;
+        }
+
+        .chat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat>p {
+            margin: 0
+        }
+
+        .chat {
+            margin-bottom: 10px;
+        }
+
+        input {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+        }
+
+        #send {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: black;
+            min-width: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="parent">
+        <div class="header">
+            <h1>Sample Chat</h1>
+        </div>
+        <div class="main">
+
+        </div>
+        <div class="footer">
+            <input placeholder="Your Message Here" id="inp"
+                style="border:none;outline:none;width: 100%;height: 100%;background-color: #eee;padding-left:20px;"
+                type="text">
+            <a href="#" id="send">Send</a>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCk4dJg6lvOiIHl3agZuCpaHlMhySpruZs",
+            authDomain: "viola-bf2db.firebaseapp.com",
+            projectId: "viola-bf2db",
+            storageBucket: "viola-bf2db.appspot.com",
+            messagingSenderId: "404611405545",
+            appId: "1:404611405545:web:e7e712ce2ecd6d093bc278",
+            measurementId: "G-M7T8XCRWHP"
+        };
+        firebase.initializeApp(firebaseConfig);
+        firebase.analytics();
+        let user
+        if (localStorage.getItem("user") === "" || localStorage.getItem("user") === null || localStorage.getItem("user") === undefined) {
+            user = prompt("input yourusername")
+            localStorage.setItem("user", user)
+        } else {
+            user = localStorage.getItem("user")
+        }
+
+        const db = firebase.firestore()
+        const chat = (author, text) => {
+            return `
+            <div class="chat">
+                <b/>${author}</b>
+                <p>${text}</p>
+            </div>
+            `
+        }
+        let x = 0
+        const sendchat = (text) => {
+            db.collection("chats").add({
+                author: user,
+                text: text,
+                time: firebase.firestore.Timestamp.fromDate(new Date())
+            })
+            .then(()=>{
+                document.querySelector("#inp").value = ""
+            })
+        }
+        document.getElementById("send")
+            .addEventListener("click", () => {
+                sendchat(document.querySelector("#inp").value)
+            })
+        document.getElementById("inp")
+            .addEventListener("keypress", (e) => {
+                if(e.key === "Enter" && document.getElementById("inp").value !== ""){
+                    sendchat(document.querySelector("#inp").value)
+                }
+            })
+        const getchat = () => {
+            db.collection("chats")
+                .orderBy("time", "asc")
+                .get()
+                .then((q) => {
+                    if (x === 0) {
+                        q.forEach((doc) => {
+                            const dat = doc.data()
+                            document.querySelector(".main").innerHTML = document.querySelector(".main").innerHTML + chat(dat.author, dat.text)
+                        })
+                        x = 1
+                    } else {
+                        const doc = q.docs[q.docs.length - 1]
+                        const dat = doc.data()
+                        document.querySelector(".main").innerHTML = document.querySelector(".main").innerHTML + chat(dat.author, dat.text)
+                    }
+                })
+        }
+        db.collection("chats")
+            .onSnapshot((snap) => {
+                getchat()
+            })
+    </script>
+</body>
+
+</html>
